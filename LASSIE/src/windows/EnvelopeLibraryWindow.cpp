@@ -85,6 +85,7 @@ EnvelopeLibraryWindow::EnvelopeLibraryWindow(QWidget* parent)
     xyLegendLayout->addWidget(xyWidget, 0, Qt::AlignLeft);
     QLabel* legend = new QLabel("Right click the graph to see available actions or click-and-drag a node to adjust the envelope.\nThick segment = Flexible; Thin segment = Fixed.\nBlue = Linear; Green = Spline; Red = Exponential (curved).\nYou can also type X and Y values directly to position nodes.", this);
     legend->setWordWrap(true);
+    legend->setMinimumHeight(120);
     legend->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     xyLegendLayout->addWidget(legend, 1);
     layout->addLayout(xyLegendLayout);
