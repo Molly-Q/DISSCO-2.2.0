@@ -1,4 +1,5 @@
 #include "Updater.hpp"
+#include "ReleaseAssetSelector.hpp"
 
 #include <QApplication>
 #include <QDateTime>
@@ -42,24 +43,6 @@ QVersionNumber parseTag(const QString &tag) {
         trimmed.remove(0, 1);
     }
     return QVersionNumber::fromString(trimmed);
-}
-
-// Asset filename substring that identifies this platform's installer.
-// Must stay in sync with packaging/Packaging.cmake's CPACK_PACKAGE_FILE_NAME
-// and the workflow in .github/workflows/release.yml:
-//   macOS    DISSCO-<ver>-Darwin.dmg
-//   Linux    DISSCO-<ver>-Linux-<arch>.AppImage
-//   Windows  DISSCO-<ver>-Windows.exe
-QString platformAssetMarker() {
-#if defined(Q_OS_MACOS)
-    return QStringLiteral("-Darwin.dmg");
-#elif defined(Q_OS_WIN)
-    return QStringLiteral("-Windows.exe");
-#elif defined(Q_OS_LINUX)
-    return QStringLiteral(".AppImage");
-#else
-    return QString();
-#endif
 }
 
 }  // namespace
@@ -160,24 +143,17 @@ void Updater::onReleaseReply(QNetworkReply *reply) {
         return;
     }
 
-    // Find the asset matching this OS.
-    const QString marker = platformAssetMarker();
-    if (!marker.isEmpty()) {
-        const QString archHint = QSysInfo::currentCpuArchitecture();
-        const QJsonArray assets = obj.value("assets").toArray();
-        for (const QJsonValue &v : assets) {
-            const QJsonObject a = v.toObject();
-            const QString name = a.value("name").toString();
-            if (!name.contains(marker)) continue;
-#if defined(Q_OS_LINUX)
-            // Prefer an arch-matched build when multiple AppImages exist.
-            if (!name.contains(archHint) && assets.size() > 1) continue;
-#endif
-            info.assetName = name;
-            info.assetUrl = QUrl(a.value("browser_download_url").toString());
-            info.assetSize = static_cast<qint64>(a.value("size").toDouble());
-            break;
-        }
+    // Releases can also contain CMOD-only packages. Select only the DISSCO
+    // installer for this platform so the GUI updater never downloads CMOD.
+    const auto selectedAsset = DISSCO::ReleaseAssets::selectDisscoAsset(
+        obj.value("assets").toArray(),
+        DISSCO::ReleaseAssets::currentPlatform(),
+        QSysInfo::currentCpuArchitecture());
+    if (selectedAsset.has_value()) {
+        const QJsonObject &asset = selectedAsset.value();
+        info.assetName = asset.value("name").toString();
+        info.assetUrl = QUrl(asset.value("browser_download_url").toString());
+        info.assetSize = static_cast<qint64>(asset.value("size").toDouble());
     }
 
     if (!info.assetUrl.isValid()) {
@@ -300,7 +276,7 @@ void Updater::downloadAndInstall(const ReleaseInfo &info) {
 
 void Updater::launchInstaller(const QString &localPath) {
 #if defined(Q_OS_MACOS)
-    // Mount the DMG in Finder; user drags LASSIE.app into Applications.
+    // Mount the DMG in Finder; user drags lassie.app into Applications.
     if (!QDesktopServices::openUrl(QUrl::fromLocalFile(localPath))) {
         reportError(tr("Couldn't open downloaded installer at %1").arg(localPath));
         return;
@@ -311,7 +287,7 @@ void Updater::launchInstaller(const QString &localPath) {
 
 #elif defined(Q_OS_WIN)
     // Launch the NSIS installer; it'll elevate, uninstall the current
-    // version, and install the new one. We quit so it can replace LASSIE.exe.
+    // version, and install the new one. We quit so it can replace lassie.exe.
     if (!QDesktopServices::openUrl(QUrl::fromLocalFile(localPath))) {
         reportError(tr("Couldn't launch installer at %1").arg(localPath));
         return;

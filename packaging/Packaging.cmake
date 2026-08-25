@@ -1,10 +1,10 @@
 # Release packaging for DISSCO (LASSIE GUI + CMOD CLI).
 #
 # Produces:
-#   - macOS: a .dmg containing LASSIE.app (with CMOD embedded in
+#   - macOS: a .dmg containing lassie.app (with cmod embedded in
 #     Contents/MacOS/) via CPack's DragNDrop generator. Qt frameworks are
 #     bundled by an install(CODE) step that invokes macdeployqt.
-#   - Windows: an NSIS installer .exe (LASSIE.exe + CMOD.exe + Qt DLLs)
+#   - Windows: an NSIS installer .exe (lassie.exe + cmod.exe + Qt DLLs)
 #     via CPack's NSIS generator. Qt DLLs are bundled by an install(CODE)
 #     step that invokes windeployqt. The installer writes registry entries
 #     under HKLM\Software\Classes for the .dissco extension; these
@@ -18,6 +18,7 @@
 # Trigger:
 #   cmake --build build --target package        # macOS DMG / Windows .exe
 #   cmake --build build --target appimage       # Linux AppImage
+#   cmake --build build --target cmod-package   # CMOD-only platform package
 
 set(CPACK_PACKAGE_NAME "DISSCO")
 set(CPACK_PACKAGE_VENDOR "DISSCO Project")
@@ -31,40 +32,45 @@ set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE")
 set(CPACK_PACKAGE_FILE_NAME "DISSCO-${DISSCO_VERSION}-${CMAKE_SYSTEM_NAME}")
 
 if(APPLE)
-    # macdeployqt lives in Qt6's bin directory; ask the imported target where
-    # that is so we don't depend on PATH.
+    # Locate every tool used by the install-time app fixup. Missing optional
+    # packaging tools are reported when `package` runs, not during a normal
+    # developer build.
     get_target_property(_qmake_executable Qt6::qmake IMPORTED_LOCATION)
     get_filename_component(_qt_bin_dir "${_qmake_executable}" DIRECTORY)
+    get_filename_component(_qt_root_dir "${_qt_bin_dir}" DIRECTORY)
     set(MACDEPLOYQT_EXECUTABLE "${_qt_bin_dir}/macdeployqt")
+    find_program(DYLIBBUNDLER_EXECUTABLE NAMES dylibbundler)
+    find_program(OTOOL_EXECUTABLE NAMES otool)
+    find_program(BASH_EXECUTABLE NAMES bash REQUIRED)
 
-    # Bundle Qt frameworks into the installed LASSIE.app. Runs at `cmake
-    # --install` time (and therefore during CPack), after the executable and
-    # CMOD have been copied in.
-    #
-    # macdeployqt prints alarming-looking "ERROR: Cannot resolve rpath" lines
-    # for weak-linked Qt modules (QtPdf, QtSvg, QtVirtualKeyboard*) that
-    # aren't installed via brew's qt@6 and that LASSIE doesn't actually use.
-    # These are non-fatal: macdeployqt still exits 0 and the bundle is
-    # valid. We capture output and drop those known-benign lines so real
-    # problems remain visible.
+    # Both app executables link libsndfile, while macdeployqt only deploys Qt
+    # dependencies. Run the dedicated fixup after lassie and cmod are installed
+    # so it can bundle third-party dylibs, deploy Qt, and smoke-test embedded
+    # CMOD from the staged app before CPack creates the DMG.
     install(CODE "
-        message(STATUS \"Running macdeployqt on \${CMAKE_INSTALL_PREFIX}/LASSIE.app\")
+        message(STATUS \"Fixing up \${CMAKE_INSTALL_PREFIX}/lassie.app\")
         execute_process(
-            COMMAND \"${MACDEPLOYQT_EXECUTABLE}\"
-                \"\${CMAKE_INSTALL_PREFIX}/LASSIE.app\"
-                -always-overwrite
-            RESULT_VARIABLE _mdq_result
-            OUTPUT_VARIABLE _mdq_out
-            ERROR_VARIABLE _mdq_err
+            COMMAND \"${CMAKE_COMMAND}\" -E env
+                \"APP_BUNDLE=\${CMAKE_INSTALL_PREFIX}/lassie.app\"
+                \"DYLIBBUNDLER=${DYLIBBUNDLER_EXECUTABLE}\"
+                \"MACDEPLOYQT=${MACDEPLOYQT_EXECUTABLE}\"
+                \"OTOOL=${OTOOL_EXECUTABLE}\"
+                \"QT_ROOT=${_qt_root_dir}\"
+                \"${BASH_EXECUTABLE}\"
+                \"${CMAKE_SOURCE_DIR}/packaging/macos/fixup-dissco-app.sh\"
+            RESULT_VARIABLE _fixup_result
+            OUTPUT_VARIABLE _fixup_out
+            ERROR_VARIABLE _fixup_err
         )
-        set(_mdq_combined \"\${_mdq_out}\${_mdq_err}\")
-        string(REGEX REPLACE \"(ERROR: Cannot resolve rpath \\\"@rpath/Qt(Pdf|Svg|VirtualKeyboard[A-Za-z]*)\\\\.framework[^\\n]*\\n)\" \"\" _mdq_filtered \"\${_mdq_combined}\")
-        string(REGEX REPLACE \"(ERROR:  using QList[^\\n]*\\n)\" \"\" _mdq_filtered \"\${_mdq_filtered}\")
-        if(_mdq_filtered)
-            message(\"\${_mdq_filtered}\")
+        if(_fixup_out)
+            message(\"\${_fixup_out}\")
         endif()
-        if(NOT _mdq_result EQUAL 0)
-            message(FATAL_ERROR \"macdeployqt failed with exit code \${_mdq_result}\")
+        if(_fixup_err)
+            message(\"\${_fixup_err}\")
+        endif()
+        if(NOT _fixup_result EQUAL 0)
+            message(FATAL_ERROR
+                \"macOS app fixup failed with exit code \${_fixup_result}\")
         endif()
     " COMPONENT Runtime)
 
@@ -77,7 +83,7 @@ if(APPLE)
 endif()
 
 if(WIN32)
-    # windeployqt: walks LASSIE.exe's PE imports and copies the matching Qt
+    # windeployqt: walks lassie.exe's PE imports and copies the matching Qt
     # DLLs (and platform plugins, styles, etc.) into the same directory.
     # We pull the Qt6::windeployqt imported target's path so the path
     # tracks whatever Qt the build is configured against, not whatever
@@ -90,13 +96,13 @@ if(WIN32)
         REQUIRED
     )
 
-    # Run windeployqt against the installed LASSIE.exe. Crucially this is a
+    # Run windeployqt against the installed lassie.exe. Crucially this is a
     # separate invocation from any build-time windeployqt (e.g. the one in
     # LASSIE/CMakeLists.txt's POST_BUILD command, which targets the build
     # dir for dev convenience): the installer needs DLLs in CMAKE_INSTALL_PREFIX,
     # not the build dir.
     install(CODE "
-        message(STATUS \"Running windeployqt on \${CMAKE_INSTALL_PREFIX}/bin/LASSIE.exe\")
+        message(STATUS \"Running windeployqt on \${CMAKE_INSTALL_PREFIX}/bin/lassie.exe\")
         execute_process(
             COMMAND \"${WINDEPLOYQT_EXECUTABLE}\"
                 --verbose 0
@@ -104,7 +110,7 @@ if(WIN32)
                 --no-translations
                 --no-system-d3d-compiler
                 --no-quick-import
-                \"\${CMAKE_INSTALL_PREFIX}/bin/LASSIE.exe\"
+                \"\${CMAKE_INSTALL_PREFIX}/bin/lassie.exe\"
             RESULT_VARIABLE _wdq_result
         )
         if(NOT _wdq_result EQUAL 0)
@@ -115,17 +121,17 @@ if(WIN32)
     set(CPACK_GENERATOR "NSIS")
     set(CPACK_NSIS_PACKAGE_NAME "DISSCO ${DISSCO_VERSION}")
     set(CPACK_NSIS_DISPLAY_NAME "DISSCO ${DISSCO_VERSION}")
-    set(CPACK_NSIS_HELP_LINK "https://github.com/cmp-illinois/DISSCO-2.2.0")
-    set(CPACK_NSIS_URL_INFO_ABOUT "https://github.com/cmp-illinois/DISSCO-2.2.0")
-    set(CPACK_NSIS_CONTACT "https://github.com/cmp-illinois/DISSCO-2.2.0/issues")
+    set(CPACK_NSIS_HELP_LINK "https://github.com/cmp-illinois/DISSCO")
+    set(CPACK_NSIS_URL_INFO_ABOUT "https://github.com/cmp-illinois/DISSCO")
+    set(CPACK_NSIS_CONTACT "https://github.com/cmp-illinois/DISSCO/issues")
     set(CPACK_NSIS_MODIFY_PATH OFF)
     set(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL ON)
     set(CPACK_PACKAGE_INSTALL_DIRECTORY "DISSCO ${DISSCO_VERSION}")
     set(CPACK_NSIS_EXECUTABLES_DIRECTORY "bin")
 
-    # Start Menu and desktop shortcuts pointing at LASSIE.exe.
-    set(CPACK_PACKAGE_EXECUTABLES "LASSIE;LASSIE")
-    set(CPACK_CREATE_DESKTOP_LINKS "LASSIE")
+    # Start Menu and desktop shortcuts pointing at lassie.exe.
+    set(CPACK_PACKAGE_EXECUTABLES "lassie;LASSIE")
+    set(CPACK_CREATE_DESKTOP_LINKS "lassie")
 
     if(EXISTS "${CMAKE_SOURCE_DIR}/packaging/windows/LASSIE.ico")
         # NSIS wants Windows-native backslashes in these paths.
@@ -133,7 +139,7 @@ if(WIN32)
         string(REPLACE "\\" "\\\\" _nsis_icon "${_nsis_icon}")
         set(CPACK_NSIS_MUI_ICON "${_nsis_icon}")
         set(CPACK_NSIS_MUI_UNIICON "${_nsis_icon}")
-        set(CPACK_NSIS_INSTALLED_ICON_NAME "bin\\\\LASSIE.exe")
+        set(CPACK_NSIS_INSTALLED_ICON_NAME "bin\\\\lassie.exe")
     endif()
 
     # File-association registry entries.
@@ -160,8 +166,8 @@ if(WIN32)
         WriteRegStr HKLM 'Software\\\\Classes\\\\.dissco' '' 'DISSCO.Project'
         WriteRegStr HKLM 'Software\\\\Classes\\\\DISSCO.Project' '' 'DISSCO Project'
         WriteRegStr HKLM 'Software\\\\Classes\\\\DISSCO.Project' 'FriendlyTypeName' 'DISSCO Project'
-        WriteRegStr HKLM 'Software\\\\Classes\\\\DISSCO.Project\\\\DefaultIcon' '' '$INSTDIR\\\\bin\\\\LASSIE.exe,0'
-        WriteRegStr HKLM 'Software\\\\Classes\\\\DISSCO.Project\\\\shell\\\\open\\\\command' '' '\\\"$INSTDIR\\\\bin\\\\LASSIE.exe\\\" \\\"%1\\\"'
+        WriteRegStr HKLM 'Software\\\\Classes\\\\DISSCO.Project\\\\DefaultIcon' '' '$INSTDIR\\\\bin\\\\lassie.exe,0'
+        WriteRegStr HKLM 'Software\\\\Classes\\\\DISSCO.Project\\\\shell\\\\open\\\\command' '' '\\\"$INSTDIR\\\\bin\\\\lassie.exe\\\" \\\"%1\\\"'
         System::Call 'shell32::SHChangeNotify(i 0x08000000, i 0, p 0, p 0)'
     ")
     set(CPACK_NSIS_EXTRA_UNINSTALL_COMMANDS "
@@ -188,6 +194,60 @@ if(UNIX AND NOT APPLE)
                 bash "${CMAKE_SOURCE_DIR}/packaging/linux/build-appimage.sh"
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
         COMMENT "Building DISSCO AppImage"
+        VERBATIM
+    )
+endif()
+
+# CMOD is also distributed as a standalone command-line package. These targets
+# stage directly from the CMOD executable and leave the combined DISSCO Runtime
+# component untouched.
+if(UNIX AND NOT APPLE)
+    add_custom_target(cmod-package
+        COMMAND ${CMAKE_COMMAND} -E env
+                "DISSCO_VERSION=${DISSCO_VERSION}"
+                "APPDIR=${CMAKE_BINARY_DIR}/CmodAppDir"
+                "OUTPUT_DIR=${CMAKE_BINARY_DIR}"
+                "SOURCE_DIR=${CMAKE_SOURCE_DIR}"
+                "CMOD_BINARY=$<TARGET_FILE:CMOD>"
+                bash "${CMAKE_SOURCE_DIR}/packaging/linux/build-cmod-appimage.sh"
+        DEPENDS CMOD
+        WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+        COMMENT "Building standalone CMOD AppImage"
+        VERBATIM
+    )
+elseif(APPLE)
+    add_custom_target(cmod-package
+        COMMAND ${CMAKE_COMMAND} -E env
+                "DISSCO_VERSION=${DISSCO_VERSION}"
+                "OUTPUT_DIR=${CMAKE_BINARY_DIR}"
+                "SOURCE_DIR=${CMAKE_SOURCE_DIR}"
+                "CMOD_BINARY=$<TARGET_FILE:CMOD>"
+                bash "${CMAKE_SOURCE_DIR}/packaging/macos/build-cmod-archive.sh"
+        DEPENDS CMOD
+        WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+        COMMENT "Building standalone CMOD macOS archive"
+        VERBATIM
+    )
+elseif(WIN32)
+    find_program(POWERSHELL_EXECUTABLE
+        NAMES pwsh powershell
+        REQUIRED
+    )
+    add_custom_target(cmod-package
+        COMMAND "${POWERSHELL_EXECUTABLE}"
+                -NoProfile
+                -ExecutionPolicy Bypass
+                -File "${CMAKE_SOURCE_DIR}/Make-Portable-for-Windows.ps1"
+                -ProjectRoot "${CMAKE_SOURCE_DIR}"
+                -BuildDirectory "${CMAKE_BINARY_DIR}"
+                -OutputDirectory "${CMAKE_BINARY_DIR}"
+                -PackageName "CMOD-${DISSCO_VERSION}-Windows-x64"
+                -CmodOnly
+                -SkipBuild
+                -SkipTests
+        DEPENDS CMOD
+        WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+        COMMENT "Building standalone CMOD Windows archive"
         VERBATIM
     )
 endif()
