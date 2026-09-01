@@ -24,6 +24,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 //----------------------------------------------------------------------------//
 
 #include "Random.h"
+#include "CmodError.h"
 
 //----------------------------------------------------------------------------//
 
@@ -43,7 +44,7 @@ void Random::SeedBySystemTime() {
 
   if (seed == 0){
   // Get the current system time and seed it
-  Seed(time(NULL));
+  Seed(static_cast<unsigned int>(time(NULL)));
   }
 }
 
@@ -98,14 +99,27 @@ double Random::Rand(Random::distribution_type distribution) {
 //----------------------------------------------------------------------------//
 
 int Random::RandInt(int lowNum, int highNum) {
-  int range = (highNum - lowNum) + 1;
-  int result = lowNum + (int)( range * Rand() );
-  return result;
+  if (lowNum > highNum) {
+    throw CmodError(CmodError::Kind::Project,
+                    "RandomInt lower bound " + std::to_string(lowNum)
+                        + " exceeds upper bound " + std::to_string(highNum) + ".",
+                    "Function: RandomInt -> Low/High",
+                    "Set the lower bound to a value less than or equal to the upper bound.");
+  }
+  const long long range = static_cast<long long>(highNum) - lowNum + 1;
+  return static_cast<int>(lowNum + static_cast<long long>(range * Rand()));
 }
 
 //----------------------------------------------------------------------------//
 
 int Random::RandOrderInt(int low, int high, int id) {
+  if (low > high) {
+    throw CmodError(CmodError::Kind::Project,
+                    "RandomOrderInt lower bound " + std::to_string(low)
+                        + " exceeds upper bound " + std::to_string(high) + ".",
+                    "Function: RandomOrderInt -> Low/High",
+                    "Set the lower bound to a value less than or equal to the upper bound.");
+  }
   static map<int, vector<int> > choicesMap;
   
   // Initialize choices if a new random order function is found, or
@@ -117,7 +131,7 @@ int Random::RandOrderInt(int low, int high, int id) {
   vector<int>& choices = choicesMap[id];
 
   // Choose a random element from available choices
-  int randIndex = RandInt(0, choices.size() - 1);
+  int randIndex = RandInt(0, static_cast<int>(choices.size() - 1));
   int result = choices[randIndex];
 
   // Remove chosen element from choices
@@ -158,19 +172,17 @@ int Random::ChooseFromProb(vector<double> probs) {
     }
   }
 
-  std::cerr << "Error in Random::ChooseFromProb" << std::endl;
-  std::cerr << "         probs.size()=" << probs.size() << ", randNum=" << randomNumber << std::endl;
-  std::cerr << "         probs=< ";
-  for (unsigned i = 0; i < probs.size(); i++) 
-    std::cerr << probs[i] << " ";
-  std::cerr << ">" << std::endl;
-  exit(1);
+  throw CmodError(CmodError::Kind::Internal,
+                  "Generated probability table of " + std::to_string(probs.size())
+                      + " entries cannot select random value " + std::to_string(randomNumber) + ".",
+                  "Random selection -> cumulative probabilities",
+                  "Report this problem with the project and seed to the DISSCO developers.");
 }
 
 //----------------------------------------------------------------------------//
 
 void Random::AssignProb(list<double> &myProbList) {
-  double len = myProbList.size();
+  double len = static_cast<double>(myProbList.size());
   double prob = 0.0;
 
   list<double>::iterator iter = myProbList.begin();
@@ -196,8 +208,8 @@ double Random::PreferedValueDistribution(double value, double checkPoint) {
 
 vector<int> Random::InitializeChoices(int low, int high) {
   vector<int> choices;
-  for (int i = low; i <= high; i++) {
-    choices.push_back(i);
+  for (long long i = low; i <= high; i++) {
+    choices.push_back(static_cast<int>(i));
   }
   return choices;
 }

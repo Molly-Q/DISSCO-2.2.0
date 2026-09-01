@@ -33,7 +33,7 @@ extern EnvelopeLibrary envlib;
 //----------------------------------------------------------------------------//
 
 Matrix::Matrix(int numTypes, int numAttacks, int numDurations,
-               vector<int> numTypesInLayers, int maxVal,
+               vector<int> numTypesInLayers, int,
                Tempo tempo, bool sieveAligned)
                : sieveAligned(sieveAligned)
                , tempo(tempo) {
@@ -127,7 +127,8 @@ void Matrix::setAttacks(Sieve* attackSieve, vector<Envelope*> attackEnvs) {
       for (unsigned durNum = 0; durNum < matr[type][attNum].size(); durNum++) {
         matr[type][attNum][durNum].attdurprob += attackSieveValue;
         if (hasEnv) {
-          double attackEnvValue = attackEnvs[type]->getValue(attNum, matr[type].size());
+          double attackEnvValue = attackEnvs[type]->getValue(
+              static_cast<m_value_type>(attNum), static_cast<m_value_type>(matr[type].size()));
           matr[type][attNum][durNum].attdurprob *= attackEnvValue;
         }
         matr[type][attNum][durNum].stime = attackStime;
@@ -155,11 +156,7 @@ void Matrix::setDurations(Sieve* durSieve, int maxVal, vector<Envelope*> durEnvs
   vector<double> durProbs;
   durSieve->FillInVectors(durTimes, durProbs);
 
-  int start;
   int durEnd;
-
-  // this marks the end-window of the parent event
-  int maxStartTime = matr[0][matr[0].size()-1][0].stime;
 
   bool hasEnv = durEnvs.size() >= matr.size();
   //int oldType = 0;
@@ -212,7 +209,8 @@ void Matrix::setDurations(Sieve* durSieve, int maxVal, vector<Envelope*> durEnvs
         } else {
           matr[type][attNum][durNum].attdurprob *= durSieveVal;
           if (hasEnv) {
-            double durEnvVal = durEnvs[type]->getValue(durNum, matr[type][attNum].size());
+            double durEnvVal = durEnvs[type]->getValue(
+                static_cast<m_value_type>(durNum), static_cast<m_value_type>(matr[type][attNum].size()));
 
 //      cout << "Matrix::setDurations - durEnvVal=" << durEnvVal << endl;
 //	int sever; cin >> sever;
@@ -241,6 +239,7 @@ void Matrix::setTypeProbs(vector<double> typeProbVect) {
 //----------------------------------------------------------------------------//
 MatPoint Matrix::chooseSweep(int remain) {
   MatPoint chosenPt = choose();
+  if (chosenPt.type == -1) return chosenPt;
 
   // set probs to 0 for every point starting before the end of chosenPt
   removeSweepConflicts(chosenPt);
@@ -259,6 +258,7 @@ MatPoint Matrix::chooseContinuum() {
 //---------------------------------------------------------------------------//
 MatPoint Matrix::chooseDiscrete(int remain) {
   MatPoint chosenPt = choose();
+  if (chosenPt.type == -1) return chosenPt;
 
   // remove conflicts in the matrix (set probs to 0)
   removeConflicts(chosenPt);
@@ -361,7 +361,7 @@ bool Matrix::normalizeMatrix() {
   }
 
   if (matrSum == 0) {
-    cerr << "MATRIX - ERROR: Sum of matrix is 0! (We're out of space)." << endl;
+    // Event reports the failed placement with the project and child context.
     return false; // indicate failure
   }
 
@@ -405,7 +405,11 @@ void Matrix::recomputeTypeProbs(int chosenType, int remaining) {
 //----------------------------------------------------------------------------//
 
 int Matrix::verify_valid(int endTime){
-  int length = short_attime.size();
+  // A valid sieve may contain only attacks after the first beat. Without a
+  // beat-local anchor, keep the already valid EDU endpoint unchanged.
+  if (short_attime.empty()) return endTime;
+
+  int length = static_cast<int>(short_attime.size());
 
   int low = 0;
   int high = length - 1;
@@ -493,7 +497,6 @@ void Matrix::removeSweepConflicts(MatPoint &chosenPt) {
           // do for each dur
 
           int currStart = matr[type][attNum][durNum].stime;
-          int currEnd = currStart + matr[type][attNum][durNum].dur;
 
           if (chosenEnd > currStart) {
             matr[type][attNum][durNum].attdurprob = 0;

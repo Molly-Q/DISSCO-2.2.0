@@ -4,6 +4,11 @@ project(LASSIE)
 message(STATUS "== LASSIE ==")
 
 find_package(Qt6 REQUIRED COMPONENTS Widgets Core Xml Network)
+if(WIN32 AND Qt6_VERSION VERSION_LESS "6.8.1")
+    message(FATAL_ERROR
+        "Windows builds require Qt 6.8.1 or newer. Qt 6.8.0 can substitute "
+        "the wrong font family for the Windows system font.")
+endif()
 
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
@@ -21,6 +26,7 @@ qt_add_executable(LASSIE
     src/core/ProjectXmlWriter.cpp src/core/ProjectXmlWriter.hpp
     src/core/ModifierUsageQtAdapter.cpp src/core/ModifierUsageQtAdapter.hpp
     src/dialogs/FunctionGenerator.cpp src/dialogs/FunctionGenerator.hpp src/ui/FunctionGenerator.ui
+    src/dialogs/FunctionXmlFormat.cpp src/dialogs/FunctionXmlFormat.hpp
     src/dialogs/PartialModifierDialog.cpp src/dialogs/PartialModifierDialog.hpp
     src/dialogs/ModifierDetailsDialog.cpp src/dialogs/ModifierDetailsDialog.hpp
     src/dialogs/ModifierRulesDialog.cpp src/dialogs/ModifierRulesDialog.hpp
@@ -76,6 +82,7 @@ qt_add_executable(LASSIE
     src/widgets/generic/FunctionEntryRow.cpp src/widgets/generic/FunctionEntryRow.hpp
     src/widgets/ComboBoxWheelGuard.cpp src/widgets/ComboBoxWheelGuard.hpp
     src/widgets/TextOverflowDisplayPolicy.cpp src/widgets/TextOverflowDisplayPolicy.hpp
+    src/widgets/WindowShortcutPolicy.cpp src/widgets/WindowShortcutPolicy.hpp
     src/core/Updater.cpp src/core/Updater.hpp
 )
 
@@ -104,6 +111,20 @@ target_include_directories(LASSIE PRIVATE
     ${CMAKE_SOURCE_DIR}/LASS/src
 )
 
+if(NOT APPLE)
+    qt_add_resources(LASSIE "app_icons"
+        PREFIX "/icons"
+        BASE "${CMAKE_SOURCE_DIR}/packaging/linux"
+        FILES "${CMAKE_SOURCE_DIR}/packaging/linux/LASSIE.png"
+    )
+endif()
+
+if(WIN32)
+    configure_file("${CMAKE_SOURCE_DIR}/packaging/windows/LASSIE.rc.in"
+        "${CMAKE_CURRENT_BINARY_DIR}/LASSIE.rc" @ONLY)
+    target_sources(LASSIE PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/LASSIE.rc")
+endif()
+
 set(LASSIE_ICON_MACOS "${CMAKE_SOURCE_DIR}/packaging/macos/LASSIE.icns")
 if(APPLE AND EXISTS "${LASSIE_ICON_MACOS}")
     target_sources(LASSIE PRIVATE "${LASSIE_ICON_MACOS}")
@@ -130,6 +151,13 @@ install(TARGETS LASSIE
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT Runtime
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT Runtime
 )
+
+if(UNIX AND NOT APPLE)
+    install(FILES "${CMAKE_SOURCE_DIR}/packaging/linux/LASSIE.desktop"
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/applications" COMPONENT Runtime)
+    install(FILES "${CMAKE_SOURCE_DIR}/packaging/linux/LASSIE.png"
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/icons/hicolor/256x256/apps" COMPONENT Runtime)
+endif()
 
 if(QT_VERSION_MAJOR EQUAL 6)
     qt_finalize_executable(LASSIE)
@@ -181,6 +209,21 @@ endif()
 
 if(BUILD_TESTING)
     target_compile_definitions(LASSIE PRIVATE DISSCO_ENABLE_UI_LAYOUT_TESTS)
+    if(NOT APPLE)
+        add_test(NAME LASSIE.ApplicationIdentity COMMAND LASSIE)
+        set_tests_properties(LASSIE.ApplicationIdentity PROPERTIES
+            ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_FORCE_STDERR_LOGGING=1;DISSCO_TEST_APPLICATION_IDENTITY=1"
+            TIMEOUT 10
+        )
+    endif()
+    if(WIN32)
+        add_test(NAME LASSIE.WindowsSystemFont COMMAND LASSIE)
+        set_tests_properties(LASSIE.WindowsSystemFont PROPERTIES
+            ENVIRONMENT "QT_QPA_PLATFORM=windows;QT_FORCE_STDERR_LOGGING=1;DISSCO_TEST_WINDOWS_FONT=1"
+            SKIP_RETURN_CODE 77
+            TIMEOUT 10
+        )
+    endif()
     add_test(NAME LASSIE.EnvelopeLegendLayout
         COMMAND LASSIE
     )
