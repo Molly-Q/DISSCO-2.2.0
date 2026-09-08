@@ -1645,8 +1645,13 @@ void EventAttributesViewController::addModifierButtonClicked() {
         return;
 
     modifiers->append(Modifier());
-    addModifiersUI(modifiers->size() - 1);
-    updateModifierUsageUi();
+    // Rebuild every row (not just add one for the new modifier) so
+    // pre-existing rows re-check their move-up/move-down button state
+    // against the new list size -- otherwise the previously-last row stays
+    // stuck with "move down" disabled until it's edited for some other
+    // reason. This matches deleteModifierRow/moveModifierRow, which already
+    // rebuild for the same reason.
+    rebuildModifierRows();
     MUtilities::modified();
 }
 
