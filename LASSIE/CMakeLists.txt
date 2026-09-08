@@ -188,6 +188,14 @@ if(BUILD_TESTING)
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen;DISSCO_TEST_ENVELOPE_LAYOUT=1"
         TIMEOUT 10
     )
+
+    add_test(NAME LASSIE.ModifierAddRefreshesMoveButtons
+        COMMAND LASSIE
+    )
+    set_tests_properties(LASSIE.ModifierAddRefreshesMoveButtons PROPERTIES
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;DISSCO_TEST_MODIFIER_ADD_REFRESH=1"
+        TIMEOUT 10
+    )
 endif()
 
 message(STATUS "DONE!")
