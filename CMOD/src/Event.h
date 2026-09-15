@@ -226,7 +226,6 @@ protected:
     //Number of restarts remaining.
     int restartsRemaining;
     static const int restartsNormallyAllowed = 6;
-    static const int restartsAllowedWithFewerChildren = 10;
 
     ///Restarts the build process if necessary (for buildDiscrete).
     void tryToRestart(void);
@@ -256,11 +255,6 @@ protected:
     pugi::xml_node methodFlagElement;
     pugi::xml_node childStartTypeFlag;
     pugi::xml_node childDurationTypeFlag;
-
-    // This thing sorta works, but killing a thread waiting for cin causes
-    // memory leak..   -- Ming-ching May 06, 2013
-    std::thread discreteWaitForInputIfFailedThread;
-    string discreteFailedResponse;
 
 
   public:
@@ -377,9 +371,9 @@ protected:
     virtual void outputProperties();
 
     /**
-    * Adds pointers to any notes in this Event (or any children) to a vector
+    * Collects the notes from this Event's descendants.
     *
-    * \param noteVect a reference to a vector of notes
+    * \return a list containing copies of the descendant notes
     **/
     virtual list<Note> getNotes();
 
@@ -392,12 +386,6 @@ protected:
     * gives the ownership of the pattern to the event.
     **/
     void addPattern(std::string _string, Patter* _pat);
-
-    /**
-    * todo: incomplete function
-    **/
-    void setDiscreteFailedResponse(string _input)
-      { discreteFailedResponse = _input;}
 
   //------------- Private helper functions  ------------//
   protected:
@@ -418,7 +406,6 @@ protected:
     *  actually, a discrete value..
     *
     *   Follows aq slightly different procedure than Sweep and Discrete.  Why?
-    *  \param iter FileValues to pass in for new objects
     **/
     bool buildContinuum();
 
@@ -428,21 +415,19 @@ protected:
      *  For stime and duration two different methods are used, one for integer
      *  values the other for float values.  Type being a discrete value, the
      *  integer values method is used for it.
-     *  \param iter FileValues to pass in for new objects
      **/
     bool buildSweep();
 
     /**
     *   Wrapper for assigning values for stimeMatrix, type and durMatrix
     *   using a matrix.  Calls ObjCoordinates, Adjustments, and TimeConvert.
-    *   \param iter FileValues to pass in for new objects
     **/
     virtual bool buildDiscrete();
 
     /**
     *  Converts "SECONDS" to "sec.", "PERCENTAGE" to "%", etc.
     **/
-    string unitTypeToUnits(string type);
+    string unitTypeToUnits(string unitType);
 
     /**
     *  helper functions
@@ -451,12 +436,14 @@ protected:
 
     string getTimeSignatureStringFromDOMElement(pugi::xml_node _element);
 
+    int checkedChildType(double value) const;
+
     void buildMatrix(bool discrete);
     
     /**
      * Checks if time is valid, if it is not, change it to closest
      *  valid value
-     *  \param: int endTime time to be verified
+     *  \param endTime end time in EDUs to check against the start-time sieve
      *  similar to a function in Note class
      **/
     int verify_valid(int endTime); 

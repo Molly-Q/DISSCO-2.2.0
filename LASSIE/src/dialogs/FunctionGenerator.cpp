@@ -1,11 +1,16 @@
 #include "FunctionGenerator.hpp"
+#include "FunctionXmlFormat.hpp"
+#include "../core/RandomOrderIntId.hpp"
 #include "../ui/ui_FunctionGenerator.h"
 
 #include "functions/FunctionRegistry.hpp"
 #include "functions/FunctionWidget.hpp"
+#include "functions/impl/RandomOrderIntFunction.hpp"
 
 #include <QComboBox>
 #include <QDialogButtonBox>
+#include <QFontDatabase>
+#include <QFontInfo>
 #include <QStackedWidget>
 #include <QTextEdit>
 #include <QVariant>
@@ -41,12 +46,16 @@ FunctionGenerator::~FunctionGenerator()
 
 QString FunctionGenerator::getResultString()
 {
-    m_result = ui->resultTextEdit->toPlainText();
+    const QString original = FunctionXmlFormat::compact(ui->resultTextEdit->toPlainText());
+    m_result = FunctionXmlFormat::compact(RandomOrderIntId::repairMissing(original));
+    if (m_result != original)
+        ui->resultTextEdit->setPlainText(FunctionXmlFormat::preview(m_result));
     return m_result;
 }
 
 void FunctionGenerator::setupUi()
 {
+    m_originalString = RandomOrderIntId::repairMissing(m_originalString);
     // Populate the combo box from the registry, filtered by return type.
     auto& reg = FunctionRegistry::instance();
     ui->functionOptions->clear();
@@ -59,8 +68,22 @@ void FunctionGenerator::setupUi()
     ui->functionOptions->setCurrentIndex(0);
 
     ui->resultLabel->setAlignment(Qt::AlignCenter);
-    ui->resultTextEdit->setMinimumHeight(60);
-    ui->resultTextEdit->setMaximumHeight(100);
+    QFont resultFont = QFontDatabase::systemFont(QFontDatabase::FixedFont);
+    if (!QFontInfo(resultFont).fixedPitch()) {
+        for (const QString& family : QFontDatabase::families()) {
+            if (QFontDatabase::isFixedPitch(family)) {
+                resultFont.setFamily(family);
+                break;
+            }
+        }
+    }
+    resultFont.setStyleHint(QFont::Monospace);
+    ui->resultTextEdit->setFont(resultFont);
+    ui->resultTextEdit->setAcceptRichText(false);
+    ui->resultTextEdit->setLineWrapMode(QTextEdit::NoWrap);
+    ui->resultTextEdit->setMinimumHeight(ui->resultTextEdit->fontMetrics().lineSpacing() * 3);
+    ui->resultTextEdit->setMaximumHeight(ui->resultTextEdit->fontMetrics().lineSpacing() * 4);
+    ui->resultTextEdit->setToolTip(tr("Function expression on one line. Scroll horizontally to read longer expressions. Use the fields above to edit parameters."));
     connect(ui->buttonBox, &QDialogButtonBox::accepted, this, &QDialog::accept);
     connect(ui->buttonBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
 
@@ -70,18 +93,20 @@ void FunctionGenerator::setupUi()
     // The matching FunctionWidget consumes the remaining children.
     QXmlStreamReader r(m_originalString);
     if (!r.readNextStartElement() || !r.readNextStartElement()) { // <Fun>, <Name>
-        ui->resultTextEdit->setText(m_originalString);
+        ui->resultTextEdit->setPlainText(FunctionXmlFormat::preview(m_originalString));
         return;
     }
     const QString functionName = FunctionWidget::readInner(r);
 
     const CMODFunction id = reg.idFromXmlName(functionName);
     if (id == NOT_A_FUNCTION) {
-        ui->resultTextEdit->setText(m_originalString);
+        ui->resultTextEdit->setPlainText(FunctionXmlFormat::preview(m_originalString));
         return;
     }
     FunctionWidget* w = ensureRegisteredWidget(id);
     if (!w) return;
+    if (auto* randomOrder = qobject_cast<RandomOrderIntFunction*>(w))
+        randomOrder->setOriginalXml(m_originalString);
 
     // Select the matching combo entry by stored id rather than by string,
     // to handle functions whose display name differs from their xml name
@@ -93,6 +118,9 @@ void FunctionGenerator::setupUi()
         }
     }
     w->populateFromXML(r);
+    // Populating the controls may emit xmlChanged, but opening the dialog
+    // must not replace manual XML edits or fields unknown to the form.
+    ui->resultTextEdit->setPlainText(FunctionXmlFormat::preview(m_originalString));
 }
 
 FunctionWidget* FunctionGenerator::ensureRegisteredWidget(CMODFunction id)
@@ -105,16 +133,16 @@ FunctionWidget* FunctionGenerator::ensureRegisteredWidget(CMODFunction id)
     m_registeredWidgets.insert(id, w);
     m_registeredPageIndex.insert(id, pageIndex);
     connect(w, &FunctionWidget::xmlChanged, this, [this, w]() {
-        ui->resultTextEdit->setText(w->buildXMLString());
+        ui->resultTextEdit->setPlainText(FunctionXmlFormat::preview(w->buildXMLString()));
     });
     return w;
 }
 
 void FunctionGenerator::handleFunctionChanged(int index)
 {
-    QVariant data = ui->functionOptions->itemData(index);
-    if (!data.isValid()) return;
-    const CMODFunction id = static_cast<CMODFunction>(data.toInt());
+    QVariant functionData = ui->functionOptions->itemData(index);
+    if (!functionData.isValid()) return;
+    const CMODFunction id = static_cast<CMODFunction>(functionData.toInt());
 
     if (id == NOT_A_FUNCTION) {
         ui->resultTextEdit->clear();
@@ -125,7 +153,7 @@ void FunctionGenerator::handleFunctionChanged(int index)
 
     if (FunctionWidget* w = ensureRegisteredWidget(id)) {
         ui->functionStackedWidget->setCurrentIndex(m_registeredPageIndex.value(id));
-        ui->resultTextEdit->setText(w->buildXMLString());
+        ui->resultTextEdit->setPlainText(FunctionXmlFormat::preview(w->buildXMLString()));
         resizeToFitCurrentPage();
     }
 }

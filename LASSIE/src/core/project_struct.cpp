@@ -5,6 +5,7 @@ in the associated window (currently, the project view).
 #include "project_struct.hpp"
 #include "event_struct.hpp"
 #include "ProjectXmlWriter.hpp"
+#include "RandomOrderIntId.hpp"
 
 #include "../../LASS/src/LASS.h"
 #include "EnvelopeLibraryEntry.hpp"
@@ -715,6 +716,8 @@ bool ProjectManager::parse(Project* p, const QString& filepath,
         return fail(QStringLiteral("Cannot read the project file: %1")
                         .arg(file.errorString()));
     }
+    RandomOrderIntId::reserve(QString::fromUtf8(file.readAll()));
+    file.seek(0);
     QXmlStreamReader r(&file);
 
     if (!r.readNextStartElement()) {
@@ -976,6 +979,9 @@ bool ProjectManager::parse(Project* p, const QString& filepath,
 #include <QTextStream>
 
 Project::Project(const QString& _title, const QByteArray& _id){
+#ifndef TABEDITOR
+    Q_UNUSED(_id);
+#endif
     if(_title.isEmpty()){
         title = tr("Untitled");
     }else{
@@ -1018,6 +1024,7 @@ Project* ProjectManager::open(const QString& filepath, const QByteArray& id,
         return nullptr;
     }
 
+    project->modifiedButNotSaved = false;
     if (makeCurrent)
         curr_project_ = project;
     

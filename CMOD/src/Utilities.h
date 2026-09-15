@@ -453,6 +453,7 @@ private:
   // Storage of LASS Parsed/generated Envelopes
 
   vector< MarkovModel<float> > markovModelLibrary;
+  std::vector<pugi::xml_node> resolvingObjectReferences;
 
   // Piece Configurations
   bool soundSynthesis = true;
@@ -462,9 +463,6 @@ private:
   int samplingRate;
   Piece* piece;
   Score* score;
-
-  // A flag to indicate that the CMOD computation is done.
-  bool doneCreatingSoundObjects = false;
 
 };
 

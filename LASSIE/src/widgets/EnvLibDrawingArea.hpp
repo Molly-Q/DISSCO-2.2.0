@@ -37,8 +37,8 @@ public:
     void resetFields();
 
     /**
-     * @brief Trigger a redraw of the given envelope
-     * @param _envelope  envelope to display
+     * @brief Trigger a redraw of the envelope library's active envelope
+     * @param _envelope  unused; the active envelope is read when painting
      */
     void showGraph(EnvelopeLibraryEntry* _envelope);
 
@@ -63,7 +63,7 @@ public:
 protected:
     /**
      * @brief Paint the envelope graph
-     * @param event  paint event
+     * @param event  paint event (unused)
      */
     void paintEvent(QPaintEvent* event) override;
 
@@ -130,6 +130,9 @@ private slots:
 
 private:
     /////// Internal helpers ///////
+    QRectF graphRect() const;
+    QPointF nodePosition(double x, double y) const;
+    QPointF valueAtPosition(const QPointF& position) const;
     /**
      * @brief Actually move the active node during drag
      */
@@ -163,7 +166,7 @@ private:
     EnvLibEntrySeg*    activeSegment; ///< currently selected segment
     EnvLibEntryNode*   activeNode;    ///< currently selected node
     bool               mouseLeftButtonPressedDown; ///< mouse drag state
-    double             mouseX, mouseY; ///< current mouse coordinates
+    double             mouseX = 0.0, mouseY = 0.0; ///< envelope coordinates at the mouse
 
     double moveLeftBound, moveRightBound; ///< drag boundaries
     double upperY, lowerY;                ///< display boundaries
