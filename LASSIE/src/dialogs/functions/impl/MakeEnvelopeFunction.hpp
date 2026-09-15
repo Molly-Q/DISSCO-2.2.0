@@ -33,6 +33,8 @@ public:
     QString displayName() const override { return QStringLiteral("MakeEnvelope"); }
     QList<FunctionReturnType> supportedReturnTypes() const override {
         return {
+            FunctionReturnType::functionReturnInt,
+            FunctionReturnType::functionReturnFloat,
             FunctionReturnType::functionReturnENV,
             FunctionReturnType::functionReturnMakeListFun,
         };
