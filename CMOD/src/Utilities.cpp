@@ -776,6 +776,15 @@ string Utilities::evaluateFunction(string _functionString,void* _object){
   else if (functionName.compare("Stochos")==0){
     resultString = function_Stochos(root, _object);
   }
+  else if (functionName == "MakeEnvelope") {
+    // Numeric fields sample the curve at the current event checkpoint,
+    // exactly like Stochos FUNCTIONS with a single envelope. Object fields
+    // still use getEnvelope() to obtain the entire curve.
+    std::unique_ptr<Envelope> envelope(getEnvelope(_functionString, _object));
+    const double checkpoint = (_object != NULL && _object != piece)
+        ? static_cast<Event*>(_object)->getCheckPoint() : 0.0;
+    resultString = to_string(envelope->getValue(static_cast<m_value_type>(checkpoint), 1.));
+  }
   else if (functionName.compare("Decay")==0){
     resultString = function_Decay(root, _object);
   }

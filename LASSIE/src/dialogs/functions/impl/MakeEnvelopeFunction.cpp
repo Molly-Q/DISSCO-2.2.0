@@ -14,12 +14,6 @@ MakeEnvelopeFunction::MakeEnvelopeFunction(QWidget* parent)
 {
     auto* layout = new QVBoxLayout(this);
 
-    m_scaleRow = new FunctionEntryRow(tr("Scaling Factor:"), 0,
-                                      FunctionReturnType::functionReturnFloat,
-                                      false, false, this);
-    m_scaleRow->setText(QStringLiteral("1.0"));
-    layout->addWidget(m_scaleRow);
-
     m_scrollArea = new QScrollArea(this);
     m_scrollArea->setWidgetResizable(true);
     m_scrollArea->setMinimumSize(400, 200);
@@ -36,6 +30,13 @@ MakeEnvelopeFunction::MakeEnvelopeFunction(QWidget* parent)
     addRow->addWidget(addButton);
     addRow->addStretch(1);
     layout->addLayout(addRow);
+
+    m_scaleRow = new FunctionEntryRow(tr("Scaling Factor:"), 0,
+                                      FunctionReturnType::functionReturnFloat,
+                                      false, false, this);
+    m_scaleRow->setText(QStringLiteral("1.0"));
+    m_scaleRow->setToolTip(tr("Multiply all envelope Y values by this factor. X positions are unchanged."));
+    layout->addWidget(m_scaleRow);
 
     connect(m_scaleRow, &FunctionEntryRow::textChanged,
             this, [this]() { emit xmlChanged(); });
