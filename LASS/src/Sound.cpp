@@ -53,9 +53,15 @@ Sound::Sound()
 //----------------------------------------------------------------------------//
 Sound::Sound(int numPartials, m_value_type baseFreq)
 {
-    
+
     spatializer_ = new Spatializer();
     spa_modified_ = false; /* ZIYUAN CHEN, July 2023 */
+    // Initialize these before the early return below -- otherwise a
+    // too-small numPartials leaves them as uninitialized garbage, and
+    // ~Sound()'s `if (reverbObj) delete reverbObj;` (same for filterObj)
+    // reads and deletes whatever was on the heap at construction time.
+    filterObj = NULL;
+    reverbObj = NULL;
     if (numPartials < 1)
     {
         cerr << "ERROR: Sound: Creation with less than 1 partial." << endl;

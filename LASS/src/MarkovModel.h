@@ -97,7 +97,7 @@ private:
   void makeConsistent();
 
   /* assert a given state is valid */
-  void checkState(int state, std::string functionName="");
+  void checkState(int state, std::string functionName="") const;
 
   vector< vector<double> > transitionMatrix;
   vector<double> initialDistribution;
@@ -108,10 +108,15 @@ private:
 };
 
 template<typename T>
-void MarkovModel<T>::checkState(int state, std::string functionName) {
-  if (state < 0 || state >=   transitionMatrix.size()) {
-    std::cerr << functionName << ".State Check Failed. Unexpected state: " << state << std::endl;
-    throw;
+void MarkovModel<T>::checkState(int state, std::string functionName) const {
+  if (state < 0 || state >= (int)transitionMatrix.size()) {
+    std::ostringstream message;
+    message << functionName << ": invalid state index " << state
+            << " (valid range is [0, " << transitionMatrix.size() << "))";
+    // A bare `throw;` with no exception in flight calls std::terminate()
+    // instead of raising something catchable -- that turned one bad index
+    // into an unconditional process abort. Throw a real exception instead.
+    throw std::out_of_range(message.str());
   }
 }
 

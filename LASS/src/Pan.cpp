@@ -72,12 +72,25 @@ MultiTrack* Pan::spatialize_Track(Track& t, int numTracks)
     // for each channel:
     for (int c=0; c<numTracks; c++)
     {
-        // get an iterator for the pan variable:
-        Iterator<m_value_type> panIter = panVar_->valueIterator();
-
         // get references for this channel.
         SoundSample& thisWave = mt->get(c)->getWave();
         SoundSample* thisAmp = doAmp ? &mt->get(c)->getAmp() : 0;
+
+        // With a single output channel there's nothing to pan across, and
+        // float(c) / float(numTracks-1) below would divide by zero (0/0 =
+        // NaN), silently poisoning every sample. Pass the signal through
+        // unscaled instead. -- Tony Chai, 2026
+        if (numTracks == 1) {
+            for (m_sample_count_type i=0; i<sampleCount; i++)
+            {
+                thisWave[i] = inWave[i];
+                if (doAmp) (*thisAmp)[i] = (*inAmp)[i];
+            }
+            continue;
+        }
+
+        // get an iterator for the pan variable:
+        Iterator<m_value_type> panIter = panVar_->valueIterator();
 
         // create a position value for this channel:
         m_value_type pos = float(c) / float(numTracks-1);
