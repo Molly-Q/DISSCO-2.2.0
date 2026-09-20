@@ -106,6 +106,8 @@ A **partial** (overtone) is one component of a sound. Adding partials changes th
 
 ![Project Properties for first_sound](images/tutorial_sound/01-project-properties.png)
 
+The screenshot was captured with an earlier project name, `first_tone`; enter `first_sound` as shown in the table.
+
 Click **OK**. You can return to these settings through **Project > Set Properties**.
 
 <!------------------------
