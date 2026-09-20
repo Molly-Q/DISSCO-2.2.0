@@ -89,6 +89,13 @@ if [[ -n "${DISSCO_CODESIGN_IDENTITY:-}" ]]; then
         echo "DISSCO app signature does not contain an Apple Team ID." >&2
         exit 1
     fi
+else
+    # dylibbundler and macdeployqt rewrite install names after the linker
+    # ad-hoc signed each Mach-O, which invalidates those signatures. arm64
+    # macOS kills binaries with invalid signatures at launch, so a build
+    # without a Developer ID must be ad-hoc re-signed once the bundle is final.
+    /usr/bin/codesign --force --deep --sign - "${APP_BUNDLE}"
+    /usr/bin/codesign --verify --deep --strict --verbose=2 "${APP_BUNDLE}"
 fi
 
 otool_dependencies() {

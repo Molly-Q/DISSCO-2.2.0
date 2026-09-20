@@ -105,6 +105,17 @@ jobs:
       - name: Package (DMG)
         run: cmake --build build --target package
 
+      - name: Test bundled Qt application
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          dmg_paths=(build/DISSCO-*-Darwin.dmg)
+          if [[ ${#dmg_paths[@]} -ne 1 ]]; then
+            echo "Expected exactly one DISSCO DMG; found ${#dmg_paths[@]}." >&2
+            exit 1
+          fi
+          packaging/macos/smoke-test-dissco-dmg.sh "${dmg_paths[0]}"
+
       - name: Sign, notarize, and verify DMG
         if: env.DISSCO_RELEASE_BUILD == 'true'
         env:
