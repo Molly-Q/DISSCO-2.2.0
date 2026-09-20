@@ -406,7 +406,7 @@
     "LASSIE/src/windows/EnvelopeLibraryWindow.cpp": "989a87225213f4804e8e0d1b788884109650378f084439b3a305ba75f34b343d"
   },
   "last_refresh_date": "2026-09-10",
-  "refresh_notes": "Images 01, 03, 05, 09, 14, 15, 16, and 42 were refreshed September 10. Properties now name first_tone; timing images show unconnected setup stages; sound/frequency images use the fixed centered tone without reverb; 14 records its successful Run; 42 shows the editable duplicate Envelope 3 at X=0.2, Y=2.5 after reopening. Other images retain September 9 captures.",
+  "refresh_notes": "Images 01, 03, 05, 09, 14, 15, 16, and 42 were refreshed September 10. Properties now name first_tone; timing images show unconnected setup stages; sound/frequency images use the fixed centered tone without reverb; 14 records its successful Run; 42 shows the editable duplicate Envelope 3 at X=0.2, Y=2.5 after reopening. Other images retain September 9 captures. The tutorial project and its supplied example were later renamed first_sound (examples/tutorial_sound/first_sound.dissco). Images 01, 09, 15, and 16 were captured before the rename: image 01 still shows first_tone in the Project Title field, and the recorded window titles for 09, 15, and 16 keep the capture-time name (the title bar is not visible in those images). Update these entries when the images are recaptured.",
   "fixes_repository": "https://github.com/DiyunZ/dissco",
   "fixes_commit": "7f505f39d583f19a9929f462939165c1ecabbd5e",
   "title_note": "Machine-specific directory prefixes are omitted from project-window titles."
