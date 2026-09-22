@@ -294,7 +294,7 @@ MultiTrack* Partial::render(int numChannels,
 	amplitude = amplitude + amptransient*amplitude;
 
 
-  //Leyi Qian, Sep 2026: Ring Modulation
+  //Ring Modulation
   rm = static_cast<m_value_type>(ring_mod_amp_it.next() * sin(2.0 * M_PI * rm_phase));
   rm_phase = pmod( rm_phase + (ring_mod_rate_it.next() / samplingRate) );
 
