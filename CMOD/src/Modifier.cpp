@@ -239,7 +239,6 @@ void Modifier::applyModSound(Sound* snd) {
              << endl;
         return;
     }
-    
     snd->setPartialParam(RING_MOD_AMP, *(env_values[0]));
     snd->setPartialParam(RING_MOD_RATE, *(env_values[1]));
   } else if (type == "AMPTRANS") {

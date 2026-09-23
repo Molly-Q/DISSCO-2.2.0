@@ -1710,7 +1710,7 @@ void Bottom::applyModifierUsage(Sound *s, int numPartials) {
 
     const string typeExpression = XMLTC(modifierElement.child("Type"));
     const double typeValue = utilities->evaluate(typeExpression, this);
-    if (!std::isfinite(typeValue) || typeValue < 0 || typeValue > 7
+    if (!std::isfinite(typeValue) || typeValue < 0 || typeValue > 8
         || std::floor(typeValue) != typeValue) {
       std::ostringstream value;
       value << typeValue;
