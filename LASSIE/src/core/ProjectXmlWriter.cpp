@@ -47,7 +47,7 @@ QString activeModifierField(const Modifier& modifier, int fieldIndex)
         /* RING_MOD  */ { true,  true,  false, false, false, false }
     };
 
-    if (modifier.type >= 8 || fieldIndex < 0 || fieldIndex >= 6
+    if (modifier.type >= 9 || fieldIndex < 0 || fieldIndex >= 6
         || !fields[modifier.type][fieldIndex]) {
         return {};
     }

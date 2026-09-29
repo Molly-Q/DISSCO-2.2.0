@@ -46,6 +46,8 @@ Partial::Partial()
     setParam(CARRIER_PHASE, 0.0);
     setParam(PHASE_AMP_ENV, 0.0);
     setParam(PHASE_RATE_ENV, 0.0);
+    setParam(RING_MOD_AMP, 0.0);
+    setParam(RING_MOD_RATE, 0.0);
     //setParam(GLISSANDO_ENV, 1.0); // (no gliss)
     setParam(FREQ_ENV, 1.0);  // nothing applied to change frequency
       setParam(DETUNING_ENV, 1.0); // (no detuning)            yes detuning ??
@@ -295,11 +297,12 @@ MultiTrack* Partial::render(int numChannels,
 
 
   //Ring Modulation
-  rm = static_cast<m_value_type>(ring_mod_amp_it.next() * sin(2.0 * M_PI * rm_phase));
+  const m_value_type rm_amp = ring_mod_amp_it.next();
+  rm = static_cast<m_value_type>(rm_amp * sin(2.0 * M_PI * rm_phase));
   rm_phase = pmod( rm_phase + (ring_mod_rate_it.next() / samplingRate) );
 
 	// Apply ring modulation to the amplitude already calculated above.
-  amplitude = static_cast<m_value_type>(amplitude * rm);
+      amplitude = static_cast<m_value_type>(amplitude * ((1.0 - rm_amp) + rm));
 
 
 

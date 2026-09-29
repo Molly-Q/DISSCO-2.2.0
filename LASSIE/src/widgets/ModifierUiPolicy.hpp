@@ -167,14 +167,14 @@ inline bool soundFieldApplies(int modifierType, int field)
         /* PHASE_MOD */ { true,  true,  false, false, false, false, false },
         /* RING_MOD  */ { true,  true,  false, false, false, false, false }
     };
-    if (modifierType < 0 || modifierType >= 8 || field < 0 || field >= fieldCount)
+    if (modifierType < 0 || modifierType >= 9 || field < 0 || field >= fieldCount)
         return false;
     return field < 6 && fields[modifierType][field];
 }
 
 inline bool fieldVisible(int modifierType, int field, bool applyByPartial)
 {
-    if (modifierType < 0 || modifierType >= 8 || field < 0 || field >= fieldCount)
+    if (modifierType < 0 || modifierType >= 9 || field < 0 || field >= fieldCount)
         return false;
     if (field == 6)
         return applyByPartial;
