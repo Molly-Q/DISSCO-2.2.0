@@ -48,6 +48,7 @@ Partial::Partial()
     setParam(PHASE_RATE_ENV, 0.0);
     setParam(RING_MOD_AMP, 0.0);
     setParam(RING_MOD_RATE, 0.0);
+    setParam(RING_MOD_WAVE_TYPE, 0.0);
     //setParam(GLISSANDO_ENV, 1.0); // (no gliss)
     setParam(FREQ_ENV, 1.0);  // nothing applied to change frequency
       setParam(DETUNING_ENV, 1.0); // (no detuning)            yes detuning ??
@@ -155,7 +156,7 @@ MultiTrack* Partial::render(int numChannels,
 
     //DynamicVariable* gliss_env = getParam(GLISSANDO_ENV).clone();
     DynamicVariable* freq_env = getParam(FREQ_ENV).clone();
-      DynamicVariable* detuning_env = getParam(DETUNING_ENV).clone();
+    DynamicVariable* detuning_env = getParam(DETUNING_ENV).clone();
     DynamicVariable* amptrans_amp_env = getParam(AMPTRANS_AMP_ENV).clone();
     DynamicVariable* amptrans_rate_env = getParam(AMPTRANS_RATE_ENV).clone();
     DynamicVariable* freqtrans_amp_env = getParam(FREQTRANS_AMP_ENV).clone();
@@ -191,7 +192,7 @@ MultiTrack* Partial::render(int numChannels,
     //ValIter freq_deviation_it = freq_dev->valueIterator();
     //ValIter gliss_it = gliss_env->valueIterator();
     ValIter freq_it = freq_env->valueIterator();
-      ValIter detuning_it = detuning_env->valueIterator();
+    ValIter detuning_it = detuning_env->valueIterator();
     ValIter amptrans_amp_it = amptrans_amp_env->valueIterator();
     ValIter amptrans_rate_it = amptrans_rate_env->valueIterator();
     ValIter freqtrans_amp_it = freqtrans_amp_env->valueIterator();
@@ -233,6 +234,8 @@ MultiTrack* Partial::render(int numChannels,
     int amptranscheck = (int)amptrans_width;
     int freqtranscheck = (int)freqtrans_width;
     float random;
+
+    const int rm_wave_type = static_cast<int>(getParam(RING_MOD_WAVE_TYPE));
 
     m_value_type freqmod = 0.0, trans_freqmod = 0;
     m_value_type amplifier = 0.0, trans_amplifier = 0;
@@ -298,7 +301,35 @@ MultiTrack* Partial::render(int numChannels,
 
   //Ring Modulation
   const m_value_type rm_amp = ring_mod_amp_it.next();
-  rm = static_cast<m_value_type>(rm_amp * sin(2.0 * M_PI * rm_phase));
+  const double p = rm_phase - floor(rm_phase);
+
+  m_value_type rm_wave;
+
+  switch (rm_wave_type) {
+    case 1: // Square
+        rm_wave = (p < 0.5) ? 1.0 : -1.0;
+        break;
+
+    case 2: // Triangle
+        rm_wave = static_cast<m_value_type>(
+            1.0 - 4.0 * fabs(p - 0.5)
+        );
+        break;
+
+    case 3: // Sawtooth
+        rm_wave = static_cast<m_value_type>(
+            2.0 * p - 1.0
+        );
+        break;
+
+    default: // 0: Sine
+        rm_wave = static_cast<m_value_type>(
+            sin(2.0 * M_PI * p)
+        );
+        break;
+  }
+
+  rm = static_cast<m_value_type>(rm_amp * rm_wave);
   rm_phase = pmod( rm_phase + (ring_mod_rate_it.next() / samplingRate) );
 
 	// Apply ring modulation to the amplitude already calculated above.
@@ -353,7 +384,7 @@ MultiTrack* Partial::render(int numChannels,
 
         // augment the frequency value by the freq-deviation and vibrato and detuning and freq_env and transients
         frequency  = frequency_it.next() * freq_it.next() * detuning_it.next();
-//      frequency  = frequency_it.next() * freq_it.next(); // * detuning_it.next()
+        // frequency  = frequency_it.next() * freq_it.next(); // * detuning_it.next()
         //frequency += freq_deviation_it.next();
         frequency = static_cast<m_value_type>(frequency * (1.0 + vibrato));
 
@@ -547,6 +578,10 @@ void Partial::xml_print( ofstream& xmlOutput, list<Reverb*>& revObjs, list<Dynam
 	getParam(RING_MOD_RATE).xml_print( xmlOutput, dynObjs );
 	xmlOutput << "\t\t\t</ring_mod_rate>" << endl;
 
+  xmlOutput << "\t\t\t<ring_mod_wave_type value=\""
+            << getParam(RING_MOD_WAVE_TYPE)
+            << "\" />" << endl;
+
 	//xmlOutput << "\t\t\t<frequency_deviation>" << endl;
 	//getParam(FREQUENCY_DEVIATION).xml_print( xmlOutput, dynObjs );
 	//xmlOutput << "\t\t\t</frequency_deviation>" << endl;
@@ -599,6 +634,13 @@ void Partial::xml_read(XmlReader::xmltag* partialtag, DISSCO_HASHMAP<m_xml_id_ty
 
 	// For sake of ease, I am going to forego searching for each item and instead
 	// iterate thru the list of child tags.
+  if ((value = partialtag->findChildParamValue(
+         "ring_mod_wave_type", "value")) != 0) {
+    setParam(
+        RING_MOD_WAVE_TYPE,
+        static_cast<m_value_type>(atoi(value))
+    );
+}
 
 	XmlReader::xmltag *dvtag;	XmlReader::xmltagset *child=partialtag->children;
 

@@ -1737,6 +1737,30 @@ void Bottom::applyModifierUsage(Sound *s, int numPartials) {
         continue;
     }
 
+    int ringModWaveType = 0;
+
+    if (modType == "RING_MOD") {
+      const auto waveNode = modifierElement.child("RingModWaveType");
+
+      if (waveNode) {
+        const string waveText = XMLTC(waveNode);
+        double waveValue = 0.0;
+
+        if (!parseStrictDouble(waveText.c_str(), waveValue)
+            || !std::isfinite(waveValue)
+            || waveValue < 0.0 || waveValue > 3.0
+            || std::floor(waveValue) != waveValue) {
+            runtimeError(
+                "modifier '" + usageId
+                + "' requires RingModWaveType to be an integer from 0 to 3."
+            );
+            continue;
+        }
+
+        ringModWaveType = static_cast<int>(waveValue);
+      }
+    }
+
     const string applyExpression = XMLTC(modifierElement.child("ApplyHow"));
     const double applyValue = utilities->evaluate(applyExpression, this);
     if (!std::isfinite(applyValue) || (applyValue != 0 && applyValue != 1)) {
@@ -1813,6 +1837,8 @@ void Bottom::applyModifierUsage(Sound *s, int numPartials) {
 
     if (!applyByPartial) {
       auto effect = std::make_unique<Modifier>(modType, nullptr, "SOUND");
+      if (modType == "RING_MOD")
+        effect->setRingModWaveType(ringModWaveType);
       int envelopeCount = 0;
       envelopeCount += addEnvelope(*effect, ampStr, "Amplitude") ? 1 : 0;
       if (modType == "DETUNE") {
@@ -1901,6 +1927,9 @@ void Bottom::applyModifierUsage(Sound *s, int numPartials) {
           modType, probabilityEnvelope, "PARTIAL", partialIndex);
       delete probabilityEnvelope;
 
+      if (modType == "RING_MOD")
+        effect->setRingModWaveType(ringModWaveType);
+        
       int envelopeCount = 0;
       envelopeCount += addEnvelope(
           *effect, XMLTC(amplitudeElement), "partial Amplitude") ? 1 : 0;

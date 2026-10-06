@@ -59,14 +59,38 @@ ModifierDetailsDialog::ModifierDetailsDialog(const Modifier& modifier,
     effectLayout->addWidget(applyLabel, 0, 0);
     effectLayout->addWidget(m_applyCombo, 0, 1, 1, 2);
 
-    addFieldRow(effectLayout, 1, Magnitude, tr("Magnitude Envelope:"));
-    addFieldRow(effectLayout, 2, Rate, tr("Rate Envelope:"));
-    addFieldRow(effectLayout, 3, Width, tr("Width Envelope:"));
-    addFieldRow(effectLayout, 4, Spread, tr("Detune Spread:"));
-    addFieldRow(effectLayout, 5, Direction, tr("Detune Direction:"));
-    addFieldRow(effectLayout, 6, Velocity, tr("Detune Velocity:"));
-    addFieldRow(effectLayout, 7, PartialResult, tr("Partial Parameters:"));
+    int nextRow = 1;
+
+    // Waveform selection only for Ring Modulation.
+    if (static_cast<int>(m_modifier.type) == 8) {
+        auto* waveLabel = new QLabel(tr("RM Waveform:"), effectGroup);
+        m_rmWaveCombo = new QComboBox(effectGroup);
+
+        m_rmWaveCombo->addItem(tr("Sine"), 0);
+        m_rmWaveCombo->addItem(tr("Square"), 1);
+        m_rmWaveCombo->addItem(tr("Triangle"), 2);
+        m_rmWaveCombo->addItem(tr("Sawtooth"), 3);
+
+        const int index = m_rmWaveCombo->findData(
+            m_modifier.ring_mod_wave_type);
+        m_rmWaveCombo->setCurrentIndex(index >= 0 ? index : 0);
+
+        waveLabel->setBuddy(m_rmWaveCombo);
+        effectLayout->addWidget(waveLabel, nextRow, 0);
+        effectLayout->addWidget(m_rmWaveCombo, nextRow, 1, 1, 2);
+        ++nextRow;
+    }
+
+    addFieldRow(effectLayout, nextRow++, Magnitude, tr("Magnitude Envelope:"));
+    addFieldRow(effectLayout, nextRow++, Rate, tr("Rate Envelope:"));
+    addFieldRow(effectLayout, nextRow++, Width, tr("Width Envelope:"));
+    addFieldRow(effectLayout, nextRow++, Spread, tr("Detune Spread:"));
+    addFieldRow(effectLayout, nextRow++, Direction, tr("Detune Direction:"));
+    addFieldRow(effectLayout, nextRow++, Velocity, tr("Detune Velocity:"));
+    addFieldRow(effectLayout, nextRow++, PartialResult, tr("Partial Parameters:"));
     root->addWidget(effectGroup);
+
+    
 
     auto* buttons = new QDialogButtonBox(
         QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
@@ -502,6 +526,11 @@ void ModifierDetailsDialog::accept()
         } else {
             setValue(widgets.field, widgets.edit->text());
         }
+    }
+
+    if (m_rmWaveCombo) {
+        m_modifier.ring_mod_wave_type =
+            m_rmWaveCombo->currentData().toInt();
     }
     QDialog::accept();
 }

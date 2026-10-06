@@ -58,6 +58,7 @@ Modifier::Modifier(const Modifier& orig) {
   checkPt = orig.checkPt;
   partialNum = orig.partialNum;
   partialResultString = orig.partialResultString;
+  ringModWaveType = orig.ringModWaveType;
 
   if (orig.probEnv != NULL) {
     probEnv = new Envelope(*orig.probEnv);
@@ -85,6 +86,7 @@ Modifier& Modifier::operator=(const Modifier& rhs) {
   checkPt = rhs.checkPt;
   partialNum = rhs.partialNum;
   partialResultString = rhs.partialResultString;
+  ringModWaveType = rhs.ringModWaveType;
 
   delete probEnv;
   if (rhs.probEnv != NULL) {
@@ -143,6 +145,12 @@ void Modifier::addDirection(double dir_){
  void Modifier::addVelocity(double vel){
   velocity = vel;
  }
+
+//----------------------------------------------------------------------------//
+
+void Modifier::setRingModWaveType(int waveType) {
+    ringModWaveType = waveType;
+}
 
 //----------------------------------------------------------------------------//
 
@@ -241,6 +249,7 @@ void Modifier::applyModSound(Sound* snd) {
     }
     snd->setPartialParam(RING_MOD_AMP, *(env_values[0]));
     snd->setPartialParam(RING_MOD_RATE, *(env_values[1]));
+    snd->setPartialParam(RING_MOD_WAVE_TYPE, ringModWaveType);
   } else if (type == "AMPTRANS") {
     snd->setPartialParam(AMPTRANS_AMP_ENV, *(env_values[0]));
     snd->setPartialParam(AMPTRANS_RATE_ENV, *(env_values[1]));
@@ -304,13 +313,13 @@ void Modifier::applyModPartial(Sound* snd) {
     delete env_values.front();
     env_values.pop_front();
   } else if (type == "RING_MOD") {
-    if (env_values.size() < 2 ||
+    /*if (env_values.size() < 2 ||
         env_values[0] == NULL || env_values[1] == NULL) {
         cerr << "WARNING: RING_MOD requires magnitude and rate "
                 "envelopes; modifier skipped."
              << endl;
         return;
-    }
+    }*/
 
     snd->get(partialNum).setParam(RING_MOD_AMP, *(env_values.front()));
     delete env_values.front();
@@ -318,6 +327,7 @@ void Modifier::applyModPartial(Sound* snd) {
     snd->get(partialNum).setParam(RING_MOD_RATE, *(env_values.front()));
     delete env_values.front();
     env_values.pop_front();
+    snd->get(partialNum).setParam(RING_MOD_WAVE_TYPE, ringModWaveType);
   } else if (type == "AMPTRANS") {
     snd->get(partialNum).setParam(AMPTRANS_AMP_ENV, *(env_values.front()));
     delete env_values.front();

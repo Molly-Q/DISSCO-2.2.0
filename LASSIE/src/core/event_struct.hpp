@@ -252,6 +252,9 @@ struct Modifier {
     QString amplitude;
     QString rate;
     QString width;
+    // RM waveform: 0 = sine, 1 = square, 2 = triangle, 3 = sawtooth.
+    int ring_mod_wave_type = 0;
+
     QString detune_spread;
     QString detune_direction;
     QString detune_velocity;

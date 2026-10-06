@@ -55,6 +55,7 @@ class Modifier {
     double checkPt;  // hold onto the checkpoint in case mod is WAVE_TYPE
     int partialNum;  // Partial num if applyHow==PARTIAL
     string partialResultString; // Partial result string for applying a modifier to multiple partials
+    int ringModWaveType = 0; // waveform for ring modulation, default to sine wave
 
   public:
    /**
@@ -111,6 +112,12 @@ class Modifier {
      *  \param vel detune velocity to add
     **/
     void addVelocity(double vel);
+
+    /**
+     * Set the ring modulation waveform.
+     * waveType: 0 = sine, 1 = square, 2 = triangle, 3 = sawtooth.
+     */
+    void setRingModWaveType(int waveType);
   
    /**
      *  Get the probability (between 0 and 1) that this modifier will occur

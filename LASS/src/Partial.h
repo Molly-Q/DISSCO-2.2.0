@@ -59,7 +59,8 @@ enum PartialStaticParam
 {
     RELATIVE_AMPLITUDE,
     PARTIAL_NUM,
-    WAVE_TYPE
+    WAVE_TYPE,
+	RING_MOD_WAVE_TYPE
 };
 
 /**
@@ -95,6 +96,10 @@ enum PartialStaticParam
 *   - RING_MOD_RATE
 *       - The frequency of the ring modulation sine wave.
 *       - Given in Hz.
+*   - RING_MOD_WAVE_TYPE
+*       - The waveform of the ring modulation oscillator.
+*       - Given as an integer: 0 = sine, 1 = square,
+*         2 = triangle, 3 = sawtooth. Default: 0.
 *	- FREQUENCY_DEVIATION ****Commmented out (i.e. not used anywhere, but can be put back in)*****
 *		- Specifies how randomly scaled the frequencies
 *		  of this partial will be.

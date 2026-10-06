@@ -65,6 +65,8 @@ private:
     unsigned m_eventIndex = 0;
     QComboBox* m_applyCombo = nullptr;
     QVector<FieldWidgets> m_fields;
+
+    QComboBox* m_rmWaveCombo = nullptr;
 };
 
 #endif // MODIFIERDETAILSDIALOG_HPP
