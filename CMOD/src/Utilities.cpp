@@ -469,9 +469,15 @@ string Utilities::XMLTranscode(pugi::xml_node _thisFunctionElement){
   }
 
   // Otherwise serialize each child node (XML for elements, raw text for text nodes).
+  // Bug fix: text was printed as XML, so ">" became "&gt;" and a field like
+  // (<Fun>...</Fun> >= 2) * 0.4 failed to evaluate. Text is now copied as
+  // typed; only the <Fun> parts stay XML. -- Tony Chai, 2026
   std::ostringstream oss;
   for (auto c = _thisFunctionElement.first_child(); c; c = c.next_sibling()) {
-    c.print(oss, "", pugi::format_raw | pugi::format_no_declaration);
+    if (c.type() == pugi::node_pcdata || c.type() == pugi::node_cdata)
+      oss << c.value();
+    else
+      c.print(oss, "", pugi::format_raw | pugi::format_no_declaration);
   }
   return oss.str();
 }
@@ -703,8 +709,8 @@ string Utilities::removeSpaces(string _originalString){
   while (true) {
     index = input.find(" ", index);
     if (index == string::npos) break;
+    // The next character slides into `index`, so search from here again.
     input.replace(index, 1, "");
-    index ++;
   }
   return input;
 }
@@ -1310,10 +1316,18 @@ Sieve* Utilities::sieve_ChooseL(pugi::xml_node _functionElement, void* _object) 
 
 //----------------------------------------------------------------------------//
 
+// ChooseL, when typed into a number field: builds the sieve given in Entry
+// (e.g. MakeSieve) and picks one of its numbers at random, following the
+// sieve's weights (a higher weight is picked more often). Runs each time
+// the field is evaluated, e.g. once per event.
 string Utilities::function_ChooseL(pugi::xml_node _functionElement, void* _object){
   //<Fun><Name>ChooseL</Name><Entry>SIV</Entry></Fun>
   string sivFunctionString =  XMLTC(GNES(GFEC(_functionElement))) ;
   Sieve* svPtr = (Sieve*)evaluateObject(sivFunctionString, _object, eventSiv);
+  // Bug fix: the sieve holds raw weights (e.g. 1, 1, 2), but ChooseL needs
+  // running totals (0.25, 0.5, 1.0). Without this it always picked the
+  // first element. -- Tony Chai, 2026
+  svPtr->CumulWeights();
   double resultNum = svPtr->ChooseL();
   delete svPtr;
   return to_string(resultNum);
