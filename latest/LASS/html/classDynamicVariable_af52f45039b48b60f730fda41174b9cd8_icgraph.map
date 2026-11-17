@@ -1,16 +1,20 @@
 <map id="DynamicVariable::clone" name="DynamicVariable::clone">
-<area shape="rect" id="Node000001" title=" " alt="" coords="589,55,765,80"/>
-<area shape="rect" id="Node000002" href="$classPartial.html#a6ab80d7069346d873d3811de427a53d8" title=" " alt="" coords="396,5,509,31"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="605,54,509,33,510,28,606,49"/>
-<area shape="rect" id="Node000003" href="$classPan.html#a719ffe74ea0cee0010a3e98a786c5b37" title=" " alt="" coords="416,55,489,80"/>
-<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="575,70,489,70,489,65,575,65"/>
-<area shape="rect" id="Node000004" href="$classParameterLib.html#a0f210f2092675bfccd5694cccf3aa372" title=" " alt="" coords="364,104,541,129"/>
-<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="606,86,512,107,511,101,605,80"/>
-<area shape="rect" id="Node000005" href="$classLoudness.html#a5cd0fbde3dfe3cbefe82970f946186a5" title=" " alt="" coords="165,53,316,79"/>
-<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="385,103,294,81,295,76,386,98"/>
-<area shape="rect" id="Node000006" href="$classSound.html#a4f246242d337ab7ef8a646f69f2a04ae" title=" " alt="" coords="5,79,117,104"/>
-<area shape="poly" id="edge6_Node000004_Node000006" title=" " alt="" coords="350,113,117,98,118,92,350,107"/>
-<area shape="rect" id="Node000007" href="$classSound.html#aa26d7b97123cab409cad4c34c1bf4706" title=" " alt="" coords="185,155,296,180"/>
-<area shape="poly" id="edge7_Node000004_Node000007" title=" " alt="" coords="386,135,295,157,294,152,385,130"/>
-<area shape="poly" id="edge5_Node000005_Node000006" title=" " alt="" coords="152,81,118,86,117,81,151,76"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="613,57,789,85"/>
+<area shape="rect" id="Node000002" href="$classPartial.html#a6ab80d7069346d873d3811de427a53d8" title=" " alt="" coords="421,5,533,33"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="621,54,534,35,534,29,626,53"/>
+<area shape="rect" id="Node000003" href="$classPan.html#a719ffe74ea0cee0010a3e98a786c5b37" title=" " alt="" coords="441,57,513,85"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="595,72,514,74,513,69,600,71"/>
+<area shape="rect" id="Node000004" href="$classParameterLib.html#a0f210f2092675bfccd5694cccf3aa372" title=" " alt="" coords="389,109,565,137"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="621,90,541,111,540,106,626,88"/>
+<area shape="rect" id="Node000005" href="$classLoudness.html#a5cd0fbde3dfe3cbefe82970f946186a5" title=" " alt="" coords="178,8,328,36"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="400,103,388,99,373,88,363,77,354,67,340,56,303,39,303,34,342,52,357,63,367,74,376,84,390,94,405,103"/>
+<area shape="rect" id="Node000006" href="$classSound.html#a4f246242d337ab7ef8a646f69f2a04ae" title=" " alt="" coords="5,33,117,61"/>
+<area shape="poly" id="edge6_Node000004_Node000006" title=" " alt="" coords="382,106,341,100,117,60,117,54,341,95,387,105"/>
+<area shape="rect" id="Node000007" href="$classParameterLib.html#ad959979d26d053b29a2bdb9e5b856e31" title=" " alt="" coords="165,109,341,137"/>
+<area shape="poly" id="edge7_Node000004_Node000007" title=" " alt="" coords="371,124,342,126,341,121,376,123"/>
+<area shape="rect" id="Node000008" href="$classSound.html#a1463f667021209897075a9c8c85435ee" title=" " alt="" coords="167,161,338,189"/>
+<area shape="poly" id="edge8_Node000004_Node000008" title=" " alt="" coords="397,142,317,163,315,158,402,140"/>
+<area shape="rect" id="Node000009" href="$classSound.html#aa26d7b97123cab409cad4c34c1bf4706" title=" " alt="" coords="198,213,308,241"/>
+<area shape="poly" id="edge9_Node000004_Node000009" title=" " alt="" coords="444,145,396,176,342,203,308,215,307,210,340,198,393,171,439,147"/>
+<area shape="poly" id="edge5_Node000005_Node000006" title=" " alt="" coords="161,35,118,42,116,38,165,32"/>
 </map>
